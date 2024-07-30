@@ -1,19 +1,23 @@
-// extract data from the Wingspan excel sheet
+import * as xlsx from "node-xlsx";
+import * as fs from "fs";
+import { BirdCard } from "./birdCard";
 
-import xlsx from "node-xlsx";
+const dataDir = `${__dirname}/../data`;
+const workSheetsFromFile = xlsx.parse(`${dataDir}/wingspan-20221201.xlsx`);
+const sheet = workSheetsFromFile[0].data;
 
-const workSheetsFromFile = xlsx.parse(
-  `${__dirname}/../data/wingspan-20221201.xlsx`
-);
+const [headers, ...dataRows] = sheet;
 
-const birds = workSheetsFromFile.find((sheet) => sheet.name === "Birds")?.[
-  "data"
-];
+const birds: BirdCard[] = dataRows
+  .map((row: any) => {
+    const data: any = {};
+    headers.forEach((header: string, index: number) => {
+      data[header] = row[index];
+    });
+    return new BirdCard(data);
+  })
+  .filter((bird: BirdCard) => bird.set === "core");
 
-if (!birds) {
-  console.error("No birds found");
-  process.exit(1);
-}
+fs.writeFileSync(`${dataDir}/birds.json`, JSON.stringify(birds, null, 2));
 
-console.log(birds[0]);
-console.log(birds[1]);
+console.log(`Saved ${birds.length} birds to ${dataDir}/birds.json`);
